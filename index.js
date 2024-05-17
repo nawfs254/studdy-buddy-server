@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -26,10 +26,66 @@ async function run() {
 
     const assignmentCollection = client.db('assignmentDB').collection('assignments')
 
-    // app.post('/assignments', async(req, res) => {
-    //     const createdAssignme
-    // })
+    app.get('/assignments', async(req, res) => {
+        const cursor = assignmentCollection.find();
+        const result = await cursor.toArray()
 
+        res.send(result)    
+    })
+
+    app.get('/assignments/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+
+      const result = await assignmentCollection.findOne(query)
+
+      res.send(result)
+    })
+
+    app.post('/assignments', async(req, res) => {
+        const newAssignment = req.body;
+        console.log(newAssignment)
+
+        const result = await assignmentCollection.insertOne(newAssignment)
+        res.send(result)
+        
+    })
+
+    app.put("/assignments/:id", async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)}
+      const options = {upsert : true}
+
+      console.log(id, filter, options)
+
+      const updatedAssignments = req.body
+      const newAssignment = {
+        $set: {
+          author: updatedAssignments.author, 
+          title: updatedAssignments.title, 
+          marks: updatedAssignments.marks,
+          imgUrl: updatedAssignments.imgUrl, 
+          submissionDate: updatedAssignments.submissionDate, 
+          difficulty: updatedAssignments.difficulty, 
+          description: updatedAssignments.description
+        }
+      }
+
+      console.log(`new Assignment is` , newAssignment)
+
+      const result = await assignmentCollection.updateOne(filter, newAssignment)
+      res.send(result)
+    })
+
+    app.delete('/assignments/:id', async(req, res)=> {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+
+      const result = await assignmentCollection.deleteOne(query)
+      res.send(result)
+    })
+
+    
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
